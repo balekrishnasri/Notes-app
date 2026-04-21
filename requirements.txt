@@ -1,4 +1,4 @@
 streamlit
-pytesseract
 pillow
-bcrypt
+pytesseract
+fpdf
