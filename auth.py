@@ -1,29 +1,35 @@
-import bcrypt
+import hashlib
 from db import get_connection
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def register_user(username, password):
     conn = get_connection()
-    c = conn.cursor()
+    cursor = conn.cursor()
 
-    c.execute("SELECT * FROM users WHERE username=?", (username,))
-    if c.fetchone():
-        conn.close()
+    hashed_password = hash_password(password)
+
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, hashed_password)
+        )
+        conn.commit()
+        return True
+    except:
         return False
-
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    c.execute("INSERT INTO users VALUES (?, ?)", (username, hashed))
-    conn.commit()
-    conn.close()
-    return True
 
 def login_user(username, password):
     conn = get_connection()
-    c = conn.cursor()
+    cursor = conn.cursor()
 
-    c.execute("SELECT * FROM users WHERE username=?", (username,))
-    data = c.fetchone()
-    conn.close()
+    hashed_password = hash_password(password)
 
-    if data:
-        return bcrypt.checkpw(password.encode(), data[1])
-    return False
+    cursor.execute(
+        "SELECT * FROM users WHERE username=? AND password=?",
+        (username, hashed_password)
+    )
+
+    user = cursor.fetchone()
+    return user is not None
